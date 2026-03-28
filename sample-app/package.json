@@ -1,6 +1,8 @@
 {
   "name": "replaykit-sample-app",
   "version": "1.0.0",
+  "author": "Arnon Danon",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "next dev",

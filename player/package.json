@@ -1,6 +1,8 @@
 {
   "name": "replaykit-player",
   "version": "1.0.0",
+  "author": "Arnon Danon",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev":     "vite",

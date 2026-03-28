@@ -2,6 +2,8 @@
   "name": "replaykit-tracker",
   "version": "1.0.0",
   "description": "Session replay tracker for Next.js apps",
+  "author": "Arnon Danon",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/replaykit-tracker.cjs.js",
   "module": "./dist/replaykit-tracker.es.js",
