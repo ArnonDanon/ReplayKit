@@ -9,6 +9,8 @@ export function getNodeId(node: Node): number {
 }
 
 // Called at the start of each session so IDs reset cleanly
+export function nextId(): number { return counter++; }
+
 export function resetIds(): void {
   counter = 1;
   // WeakMap entries are GC'd automatically — no manual clear needed

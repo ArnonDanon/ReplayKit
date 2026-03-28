@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dapper;
 using Npgsql;
 using ReplayKit.API.Models;
@@ -19,7 +20,7 @@ public class EventRepository(NpgsqlDataSource dataSource)
                 SessionId = sessionId,
                 e.Timestamp,
                 e.Type,
-                e.Data
+                Data = e.Data.GetRawText()
             }));
     }
 
@@ -36,4 +37,4 @@ public class EventRepository(NpgsqlDataSource dataSource)
     }
 }
 
-public record EventBatchItem(long Timestamp, string Type, string Data);
+public record EventBatchItem(long Timestamp, string Type, JsonElement Data);

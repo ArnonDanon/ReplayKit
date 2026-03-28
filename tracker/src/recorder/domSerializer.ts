@@ -1,5 +1,5 @@
 import type { SerializedNode, SnapshotData } from '../types';
-import { getNodeId } from './nodeIdManager';
+import { getNodeId, nextId } from './nodeIdManager';
 
 // Attribute used to mark elements injected by ReplayKit itself — never serialized
 const RK_SENTINEL = 'data-rk-sentinel';
@@ -54,9 +54,36 @@ export function serializeNode(node: Node): SerializedNode | null {
     attributes[name] = value;
   }
 
-  // ── <script>: keep tag, drop content (prevent re-execution in player) ─────
-  if (tagName === 'script') {
-    return { id, nodeType: 1, tagName, attributes, children: [] };
+  // ── <script>: drop entirely — player is a visual replay, scripts serve no purpose ─
+  if (tagName === 'script') return null;
+
+  // ── <link>: handle by rel type ───────────────────────────────────────────
+  if (tagName === 'link') {
+    const rel = el.getAttribute('rel') ?? '';
+
+    // Drop preload/modulepreload — dev-mode hints that cause 404s in the player iframe
+    if (rel === 'preload' || rel === 'modulepreload') return null;
+
+    if (rel === 'stylesheet') {
+      const inlined = inlineStylesheet(el as HTMLLinkElement, id);
+      if (inlined) return inlined;
+    }
+
+    // Rewrite all relative link hrefs to absolute (favicon, stylesheet fallback, etc.)
+    if (attributes.href && !/^(https?:\/\/|data:)/.test(attributes.href)) {
+      attributes.href = new URL(attributes.href, window.location.origin).href;
+    }
+  }
+
+  // ── Rewrite relative resource URLs to absolute ───────────────────────────
+  const urlAttrs: Record<string, string[]> = {
+    img: ['src'], video: ['src'], audio: ['src'],
+    source: ['src', 'srcset'], iframe: ['src'], image: ['href'],
+  };
+  for (const attr of urlAttrs[tagName] ?? []) {
+    if (attributes[attr] && !/^(https?:\/\/|data:|blob:)/.test(attributes[attr])) {
+      attributes[attr] = new URL(attributes[attr], window.location.origin).href;
+    }
   }
 
   // ── Recurse into children ─────────────────────────────────────────────────
@@ -67,4 +94,33 @@ export function serializeNode(node: Node): SerializedNode | null {
   }
 
   return { id, nodeType: 1, tagName, attributes, children, isSVG };
+}
+
+// ── Inline a <link rel="stylesheet"> as a <style> block ───────────────────────
+// Replaces the link with its fully resolved CSS text so the player iframe
+// can render styles without needing access to the original app's server.
+function inlineStylesheet(link: HTMLLinkElement, id: number): SerializedNode | null {
+  const sheet = Array.from(document.styleSheets).find(s => s.ownerNode === link);
+  if (!sheet) return null;
+
+  let css: string;
+  try {
+    css = Array.from(sheet.cssRules).map(r => r.cssText).join('\n');
+  } catch {
+    // Cross-origin sheet — cssRules is not accessible
+    return null;
+  }
+
+  // Rewrite relative url() references to absolute so fonts/images resolve in the player
+  const base = `${window.location.origin}/`;
+  css = css.replace(/url\((['"]?)(?!https?:\/\/|data:)([^'")]+)\1\)/g,
+    (_, q, path) => `url(${q}${new URL(path, base).href}${q})`);
+
+  return {
+    id,
+    nodeType: 1,
+    tagName:  'style',
+    attributes: {},
+    children: [{ id: nextId(), nodeType: 3, textContent: css }],
+  };
 }

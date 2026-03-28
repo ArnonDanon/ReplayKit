@@ -21,6 +21,7 @@ export default function SessionDetail() {
   const [speed,     setSpeed]     = useState<1 | 2 | 4>(1);
   const [tab,       setTab]       = useState<Tab>('console');
 
+  // Initial load
   useEffect(() => {
     if (!id) return;
     Promise.all([getSession(id), getEvents(id)]).then(([s, e]) => {
@@ -30,10 +31,30 @@ export default function SessionDetail() {
     });
   }, [id]);
 
+  // Poll while session is recording
+  useEffect(() => {
+    if (!id || !session || session.status !== 'recording') return;
+    const interval = setInterval(async () => {
+      try {
+        const [updatedSession, newEvents] = await Promise.all([getSession(id), getEvents(id)]);
+        setSession(updatedSession);
+        setEvents(newEvents);
+        if (newEvents.length > 1) {
+          const elapsed = newEvents[newEvents.length - 1].timestamp - newEvents[0].timestamp;
+          setCurrentMs(elapsed);
+        }
+      } catch { /* ignore transient poll errors */ }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [id, session?.status]);
+
   if (loading) return <div className="page"><p className="status-msg">Loading session…</p></div>;
   if (!session) return <div className="page"><p className="status-msg error">Session not found.</p></div>;
 
-  const durationMs    = session.durationMs ?? 0;
+  // For recording sessions use the span of captured events; for completed use server value
+  const durationMs = session.status === 'recording' && events.length > 1
+    ? events[events.length - 1].timestamp - events[0].timestamp
+    : session.durationMs ?? 0;
   const consoleEvents = events.filter(e => e.type === 'console');
   const networkEvents = events.filter(e => e.type === 'network');
 
@@ -46,6 +67,7 @@ export default function SessionDetail() {
           <span className="meta-url" title={session.startUrl}>{session.startUrl}</span>
           <span className="meta-date">{new Date(session.startedAt).toLocaleString()}</span>
           <span className={`badge badge-${session.status}`}>{session.status}</span>
+          {session.status === 'recording' && <span className="badge badge-live">● LIVE</span>}
         </div>
       </header>
 

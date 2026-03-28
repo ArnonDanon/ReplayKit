@@ -11,11 +11,12 @@ interface PlayerProps {
 }
 
 export default function Player({ events, currentMs }: PlayerProps) {
-  const iframeRef     = useRef<HTMLIFrameElement>(null);
-  const nodeMap       = useRef(new Map<number, Node>());
-  const lastApplied   = useRef(-1);
-  const startTs       = useRef(0);
-  const initialized   = useRef(false);
+  const iframeRef        = useRef<HTMLIFrameElement>(null);
+  const nodeMap          = useRef(new Map<number, Node>());
+  const lastApplied      = useRef(-1);
+  const startTs          = useRef(0);
+  const initialized      = useRef(false);
+  const snapTimestampRef = useRef(-1);   // detect session change vs new events appended
 
   const [cursor,    setCursor]    = useState({ x: 0, y: 0 });
   const [showClick, setShowClick] = useState(false);
@@ -25,6 +26,10 @@ export default function Player({ events, currentMs }: PlayerProps) {
     const snap = events.find(e => e.type === 'snapshot');
     if (!snap) return;
 
+    // Same session polled with more events — don't reset, let currentMs effect apply them
+    if (snap.timestamp === snapTimestampRef.current) return;
+
+    snapTimestampRef.current = snap.timestamp;
     startTs.current   = events[0]?.timestamp ?? snap.timestamp;
     initialized.current = false;
     initSnapshot(snap.data as SnapshotData);

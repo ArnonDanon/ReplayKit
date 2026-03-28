@@ -7,6 +7,8 @@ using ReplayKit.API.Repositories;
 using ReplayKit.API.Routes;
 using ReplayKit.API.Services;
 
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
