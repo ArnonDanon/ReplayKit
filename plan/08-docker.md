@@ -19,7 +19,7 @@ cd player && npm install && npm run build
 
 # 2. Build the Docker image (includes wwwroot)
 cd ..   # repo root
-docker build -t replaykit-api:latest -f src/ReplayKit.API/Dockerfile .
+docker build -t replaykit-api:latest -f server/ReplayKit.API/Dockerfile .
 ```
 
 ---

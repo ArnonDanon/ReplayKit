@@ -2,22 +2,20 @@
 # ── ReplayKit Standby — init-standby.sh ──────────────────────────────────────
 # Used as the container ENTRYPOINT.
 #
-# On first start (empty data dir): runs pg_basebackup to clone the primary,
-# writes a standby.signal, then starts postgres.
+# On first start (empty data dir): runs pg_basebackup to clone the primary.
+# The -R flag automatically writes primary_conninfo and standby.signal.
 # On subsequent starts: skips the clone and starts postgres directly.
 #
-# Required env vars:
-#   PRIMARY_HOST        — hostname / IP of the primary node
-#   REPLICATION_PASSWORD — password for the replicator role
-#   POSTGRES_PASSWORD   — password for the replaykit application role
-#   PGPASSWORD          — set to REPLICATION_PASSWORD in docker-compose
+# Required env vars (set in docker-compose / .env):
+#   PRIMARY_HOST         — hostname or IP of the primary node
+#   PGPASSWORD           — set to REPLICATION_PASSWORD (used by pg_basebackup)
 
 set -euo pipefail
 
 PGDATA="${PGDATA:-/var/lib/postgresql/data}"
 
-if [ -z "$(ls -A "$PGDATA" 2>/dev/null)" ]; then
-  echo "[ReplayKit Standby] Data directory is empty — running pg_basebackup from ${PRIMARY_HOST}..."
+if [ ! -f "$PGDATA/PG_VERSION" ]; then
+  echo "[ReplayKit Standby] Data directory is empty — cloning primary at ${PRIMARY_HOST}..."
 
   pg_basebackup \
     --host="${PRIMARY_HOST}" \
@@ -26,25 +24,15 @@ if [ -z "$(ls -A "$PGDATA" 2>/dev/null)" ]; then
     --pgdata="$PGDATA" \
     --wal-method=stream \
     --checkpoint=fast \
-    --no-password \
+    --write-recovery-conf \
     -v
 
-  echo "[ReplayKit Standby] Base backup complete."
-
-  # Write connection info for streaming replication
-  cat > "$PGDATA/postgresql.auto.conf" <<EOF
-primary_conninfo = 'host=${PRIMARY_HOST} port=5432 user=replicator password=${REPLICATION_PASSWORD}'
-EOF
-
-  # Signal PostgreSQL to start as standby
-  touch "$PGDATA/standby.signal"
-
-  # Copy our custom config
+  # Overlay our custom postgresql.conf (hot_standby, hot_standby_feedback, etc.)
   cp /etc/postgresql/postgresql.conf "$PGDATA/postgresql.conf"
 
-  echo "[ReplayKit Standby] standby.signal written — starting in hot-standby mode."
+  echo "[ReplayKit Standby] Clone complete — starting in hot-standby mode."
 else
-  echo "[ReplayKit Standby] Data directory exists — skipping base backup."
+  echo "[ReplayKit Standby] Data directory exists — skipping clone."
 fi
 
-exec docker-entrypoint.sh postgres -c config_file="$PGDATA/postgresql.conf"
+exec docker-entrypoint.sh postgres -c "config_file=$PGDATA/postgresql.conf"
