@@ -1,0 +1,46 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       replaykit
+      POSTGRES_USER:     replaykit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U replaykit"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+    networks:
+      - replaykit
+
+  api:
+    image: replaykit-api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__replaykit-db: >-
+        Host=postgres;Database=replaykit;Username=replaykit;
+        Password=${POSTGRES_PASSWORD};Pooling=true;MaxPoolSize=20
+      Jwt__Secret:                      ${JWT_SECRET}
+      TrackerApiKey:                    ${TRACKER_API_KEY}
+      REPLAYKIT_RETENTION_DAYS:         ${RETENTION_DAYS:-7}
+      REPLAYKIT_DEFAULT_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      AllowedOrigins__0:                ${ALLOWED_ORIGIN_0:-*}
+      ASPNETCORE_URLS:                  http://+:8080
+    ports:
+      - "5000:8080"   # F5 terminates SSL, forwards plain HTTP here
+    networks:
+      - replaykit
+
+volumes:
+  pgdata:
+
+networks:
+  replaykit:
+    driver: bridge

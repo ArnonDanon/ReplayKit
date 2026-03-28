@@ -1,0 +1,66 @@
+# ── ReplayKit HA — Primary node ───────────────────────────────────────────────
+#
+# Run on Node A (the primary server).
+#
+#   cp .env.example .env
+#   # set POSTGRES_PASSWORD, JWT_SECRET, TRACKER_API_KEY, REPLICATION_PASSWORD
+#   docker compose -f docker-compose.ha-primary.yml up -d
+#
+# After first start, verify replication is running:
+#   docker exec -it replaykit-postgres-primary \
+#     psql -U replaykit -c "SELECT * FROM pg_stat_replication;"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: replaykit-postgres-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:           replaykit
+      POSTGRES_USER:         replaykit
+      POSTGRES_PASSWORD:     ${POSTGRES_PASSWORD}
+      REPLICATION_PASSWORD:  ${REPLICATION_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/primary/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/primary/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      # init-replication.sh runs once on first start via initdb.d
+      - ./postgres/primary/init-replication.sh:/docker-entrypoint-initdb.d/init-replication.sh:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U replaykit"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+    networks:
+      - replaykit
+
+  api:
+    image: replaykit-api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__replaykit-db: >-
+        Host=postgres;Database=replaykit;Username=replaykit;
+        Password=${POSTGRES_PASSWORD};Pooling=true;MaxPoolSize=20
+      Jwt__Secret:                      ${JWT_SECRET}
+      TrackerApiKey:                    ${TRACKER_API_KEY}
+      REPLAYKIT_RETENTION_DAYS:         ${RETENTION_DAYS:-7}
+      REPLAYKIT_DEFAULT_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      AllowedOrigins__0:                ${ALLOWED_ORIGIN_0:-*}
+      ASPNETCORE_URLS:                  http://+:8080
+      # REPLAYKIT_READONLY is NOT set — this node accepts writes
+    ports:
+      - "5000:8080"
+    networks:
+      - replaykit
+
+volumes:
+  pgdata:
+
+networks:
+  replaykit:
+    driver: bridge

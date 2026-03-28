@@ -1,0 +1,73 @@
+# ── ReplayKit HA — Standby node ───────────────────────────────────────────────
+#
+# Run on Node B (the standby / remote server).
+#
+# Extra required env vars (add to .env on this node):
+#   PRIMARY_HOST=<ip-or-hostname-of-node-a>
+#   REPLICATION_PASSWORD=<same value as on primary>
+#
+#   docker compose -f docker-compose.ha-standby.yml up -d
+#
+# On first start the postgres service will run pg_basebackup to clone the
+# primary. This may take a minute. Subsequent restarts skip the clone.
+#
+# ── Failover (when primary goes down) ────────────────────────────────────────
+# 1. F5 automatically routes traffic here (health-check detects primary down).
+# 2. The API returns 503 for any write — tracker ingest will pause.
+# 3. Promote this PostgreSQL instance:
+#      docker exec -it replaykit-postgres-standby \
+#        psql -U replaykit -c "SELECT pg_promote();"
+# 4. Remove REPLAYKIT_READONLY from .env, then:
+#      docker compose -f docker-compose.ha-standby.yml up -d api
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: replaykit-postgres-standby
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD:    ${POSTGRES_PASSWORD}
+      PGPASSWORD:           ${REPLICATION_PASSWORD}   # used by pg_basebackup
+      PRIMARY_HOST:         ${PRIMARY_HOST}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/standby/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/standby/init-standby.sh:/init-standby.sh:ro
+    entrypoint: ["/bin/bash", "/init-standby.sh"]
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U replaykit"]
+      interval: 10s
+      timeout:  5s
+      retries:  10   # extra retries — initial basebackup takes time
+    networks:
+      - replaykit
+
+  api:
+    image: replaykit-api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__replaykit-db: >-
+        Host=postgres;Database=replaykit;Username=replaykit;
+        Password=${POSTGRES_PASSWORD};Pooling=true;MaxPoolSize=20
+      Jwt__Secret:                      ${JWT_SECRET}
+      TrackerApiKey:                    ${TRACKER_API_KEY}
+      REPLAYKIT_RETENTION_DAYS:         ${RETENTION_DAYS:-7}
+      REPLAYKIT_DEFAULT_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      AllowedOrigins__0:                ${ALLOWED_ORIGIN_0:-*}
+      ASPNETCORE_URLS:                  http://+:8080
+      REPLAYKIT_READONLY:               "true"   # remove after promoting to primary
+    ports:
+      - "5000:8080"
+    networks:
+      - replaykit
+
+volumes:
+  pgdata:
+
+networks:
+  replaykit:
+    driver: bridge

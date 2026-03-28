@@ -1,0 +1,39 @@
+# ── .dockerignore ─────────────────────────────────────────────────────────────
+# Applied when building the replaykit-api image.
+# Keep the build context small — only server/ and player dist are needed.
+
+# .NET build artifacts
+server/**/bin/
+server/**/obj/
+
+# Player source (only the built wwwroot is copied into the image)
+player/src/
+player/node_modules/
+player/vite.config.ts
+player/tsconfig.json
+player/package*.json
+player/index.html
+
+# Tracker source (not needed inside the image)
+tracker/
+
+# Sample app (not needed inside the image)
+sample-app/
+
+# Postgres config (mounted at runtime, not baked in)
+postgres/
+
+# Plan docs
+plan/
+
+# Environment files — never bake secrets into the image
+.env
+.env.*
+!.env.example
+
+# Version control
+.git/
+.gitignore
+
+# Node modules at repo root (if any)
+node_modules/
