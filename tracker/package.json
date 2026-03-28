@@ -1,0 +1,32 @@
+{
+  "name": "replaykit-tracker",
+  "version": "1.0.0",
+  "description": "Session replay tracker for Next.js apps",
+  "type": "module",
+  "main": "./dist/replaykit-tracker.cjs.js",
+  "module": "./dist/replaykit-tracker.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/replaykit-tracker.es.js",
+      "require": "./dist/replaykit-tracker.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly --noEmit false",
+    "dev": "vite build --watch"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0"
+  }
+}
