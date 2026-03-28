@@ -31,7 +31,7 @@ export function startNetworkCapture(onRequest: (data: NetworkData) => void): () 
   XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...rest: any[]) {
     (this as RkXHR).__rk_method = method.toUpperCase();
     (this as RkXHR).__rk_url   = String(url);
-    origOpen.call(this, method, url, ...rest);
+    (origOpen as (...a: unknown[]) => void).call(this, method, url, ...rest);
   };
 
   XMLHttpRequest.prototype.send = function (...args) {

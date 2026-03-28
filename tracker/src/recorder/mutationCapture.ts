@@ -1,4 +1,4 @@
-import type { MutationData, MutationRecord } from '../types';
+import type { MutationData, MutationRecord, SerializedNode } from '../types';
 import { getNodeId } from './nodeIdManager';
 import { serializeNode } from './domSerializer';
 
