@@ -16,15 +16,13 @@ RUN dotnet publish server/ReplayKit.API/ReplayKit.API.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Non-root user for security
-RUN adduser --disabled-password --gecos "" appuser
-USER appuser
-
 COPY --from=build /publish .
 
-# Player SPA static files are expected in wwwroot/
-# Build the player before building this image:
-#   cd player && npm run build   (outputs to server/ReplayKit.API/wwwroot)
+# Player SPA static files — built by Vite into server/ReplayKit.API/wwwroot/
+COPY server/ReplayKit.API/wwwroot ./wwwroot
+
+# Use the built-in non-root user provided by .NET base images
+USER app
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080

@@ -14,9 +14,9 @@
     "replaykit-tracker": "file:../tracker/replaykit-tracker-1.0.0.tgz"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.2"
   }
 }
