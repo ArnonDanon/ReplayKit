@@ -22,6 +22,7 @@ export default defineConfig({
           'react-dom':     'ReactDOM',
           'react/jsx-runtime': 'ReactJsxRuntime',
         },
+        banner: "'use client';",
       },
     },
     sourcemap: true,
