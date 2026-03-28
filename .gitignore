@@ -9,8 +9,8 @@ node_modules/
 dist/
 
 # Player build output (generated at build time)
-src/ReplayKit.API/wwwroot/*
-!src/ReplayKit.API/wwwroot/.gitkeep
+server/ReplayKit.API/wwwroot/*
+!server/ReplayKit.API/wwwroot/.gitkeep
 
 # Environment
 .env

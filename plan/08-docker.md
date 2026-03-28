@@ -14,7 +14,7 @@
 ## Build steps (before docker-compose)
 
 ```bash
-# 1. Build the player SPA (output → src/ReplayKit.API/wwwroot/)
+# 1. Build the player SPA (output → server/ReplayKit.API/wwwroot/)
 cd player && npm install && npm run build
 
 # 2. Build the Docker image (includes wwwroot)

@@ -202,7 +202,7 @@ app.UseStaticFiles();           // serves wwwroot/
 app.MapFallbackToFile("index.html");  // SPA routing fallback
 ```
 
-Player is built by Vite with `outDir` pointing to `../src/ReplayKit.API/wwwroot`.
+Player is built by Vite with `outDir` pointing to `../server/ReplayKit.API/wwwroot`.
 
 ---
 
@@ -235,4 +235,4 @@ COPY --from=build /publish .
 ENTRYPOINT ["dotnet", "ReplayKit.API.dll"]
 ```
 
-> Player SPA must be built before the Docker image. Vite build output lands in `src/ReplayKit.API/wwwroot/` which is included in the publish output.
+> Player SPA must be built before the Docker image. Vite build output lands in `server/ReplayKit.API/wwwroot/` which is included in the publish output.

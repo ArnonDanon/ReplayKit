@@ -3,13 +3,13 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
 
 # Copy solution + projects (layer-cache friendly)
-COPY src/ReplayKit.sln                              src/
-COPY src/ReplayKit.ServiceDefaults/                 src/ReplayKit.ServiceDefaults/
-COPY src/ReplayKit.API/                             src/ReplayKit.API/
+COPY server/ReplayKit.sln                              server/
+COPY server/ReplayKit.ServiceDefaults/                 server/ReplayKit.ServiceDefaults/
+COPY server/ReplayKit.API/                             server/ReplayKit.API/
 
-RUN dotnet restore src/ReplayKit.API/ReplayKit.API.csproj
+RUN dotnet restore server/ReplayKit.API/ReplayKit.API.csproj
 
-RUN dotnet publish src/ReplayKit.API/ReplayKit.API.csproj \
+RUN dotnet publish server/ReplayKit.API/ReplayKit.API.csproj \
     -c Release -o /publish --no-restore
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ COPY --from=build /publish .
 
 # Player SPA static files are expected in wwwroot/
 # Build the player before building this image:
-#   cd player && npm run build   (outputs to src/ReplayKit.API/wwwroot)
+#   cd player && npm run build   (outputs to server/ReplayKit.API/wwwroot)
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080

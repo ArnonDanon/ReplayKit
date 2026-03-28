@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir:     '../src/ReplayKit.API/wwwroot',
+    outDir:     '../server/ReplayKit.API/wwwroot',
     emptyOutDir: true,
   },
   server: {

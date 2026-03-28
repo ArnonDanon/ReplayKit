@@ -5,7 +5,7 @@ ReplayKit/
 │
 ├── plan/                          ← these planning files
 │
-├── src/                           ← .NET solution
+├── server/                           ← .NET solution
 │   ├── ReplayKit.sln
 │   │
 │   ├── ReplayKit.AppHost/         ← Aspire orchestrator (dev only)
@@ -47,7 +47,7 @@ ReplayKit/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts             ← builds to dist/ as ESM + CJS library
-│   └── src/
+│   └── server/
 │       ├── index.ts               ← public exports
 │       ├── types.ts               ← shared event types
 │       ├── api.ts                 ← HTTP client (fetch, no axios)
@@ -64,9 +64,9 @@ ReplayKit/
 ├── player/                        ← Vite React SPA
 │   ├── package.json
 │   ├── tsconfig.json
-│   ├── vite.config.ts             ← builds to ../src/ReplayKit.API/wwwroot
+│   ├── vite.config.ts             ← builds to ../server/ReplayKit.API/wwwroot
 │   ├── index.html
-│   └── src/
+│   └── server/
 │       ├── main.tsx
 │       ├── App.tsx                ← router (react-router-dom)
 │       ├── api.ts                 ← typed API client
@@ -86,7 +86,7 @@ ReplayKit/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── next.config.ts
-│   └── src/app/
+│   └── server/app/
 │       ├── layout.tsx             ← wraps with <ReplayKitProvider>
 │       ├── page.tsx               ← home page with interactive elements
 │       ├── about/page.tsx
